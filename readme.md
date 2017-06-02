@@ -1,1 +1,1 @@
-## Wes Bos http://learnnode.com master course
+## Wes Bos http://learnnode.com full course
