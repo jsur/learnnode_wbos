@@ -53,6 +53,7 @@ exports.createStore = async (req, res) => {
 //(see index.js)
 exports.getStores = async (req, res) => {
   const stores = await Store.find();
+  console.log(res.locals.user);
   res.render('stores', { title: 'Stores', stores });
 }
 
