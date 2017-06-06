@@ -38,6 +38,9 @@ const storeSchema = new mongoose.Schema({
     ref: 'User',
     required: 'You must supply an author'
   }
+}, {
+  toJSON: { virtuals: true }, //show virtually populated properties
+  toObject: { virtuals: true }
 });
 
 //Define our indexes
@@ -70,5 +73,46 @@ storeSchema.statics.getTagsList = function() {
     { $sort: { count: -1 } } //sort by desc
   ]);
 }
+
+storeSchema.statics.getTopStores = function() {
+  return this.aggregate([
+    // Look up stores and populate their reviews
+    { $lookup:
+      {from: 'reviews', localField: '_id', foreignField: 'store', as: 'reviews'}
+    },
+    // filter only for items that have 2 or more reviews
+    { $match: { 'reviews.1': { $exists: true } } }, //reviews.1 means the second item in reviews array exists, i.e. the store has at least 2 reviews
+    // Add the average reviews field
+    { $project: {
+        //average of each of reviews' rating fields.
+        //$reviews.rating means that its a field from data being piped in
+        photo: '$$ROOT.photo',
+        name: '$$ROOT.name',
+        reviews: '$$ROOT.reviews',
+        slug: '$$ROOT.slug',
+        averageRating: { $avg: '$reviews.rating' }
+    } },
+    // sort it by our new field, highest reviews first
+    { $sort: { averageRating: -1 } },
+    // limit to at most 10
+    { $limit: 10 }
+  ])
+}
+
+//find reviews where the stores _id property === review store property
+//analoguous to an SQL join but virtual, no real connection between collections
+storeSchema.virtual('reviews', {
+  ref: 'Review', //what model to link
+  localField: '_id', //the field in a store needs to match up with foreignField
+  foreignField: 'store' //the field in Review to which localField needs to match to
+});
+
+function autopopulate(next) {
+  this.populate('reviews');
+  next();
+}
+
+storeSchema.pre('find', autopopulate);
+storeSchema.pre('findOne', autopopulate);
 
 module.exports = mongoose.model('Store', storeSchema);

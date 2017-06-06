@@ -1,13 +1,14 @@
 extends layout
 
 include mixins/_reviewForm
+include mixins/_review
 
 block content
   .single
     .single__hero
       img.single__image(src=`/uploads/${store.photo || 'store.png'}`)
       h2.title.title--single
-        a(href=`/stores/${store.slug}`) #{store.name}
+        a(href=`/store/${store.slug}`) #{store.name}
         
   .single__details.inner
     img.single__map(src=h.staticMap(store.location.coordinates))
@@ -22,3 +23,9 @@ block content
               span.tag__text #{tag}
     if user
       +reviewForm(store)
+
+    if store.reviews
+      .reviews
+        each r in store.reviews
+          .review
+            +review(r)
